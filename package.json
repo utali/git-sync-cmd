@@ -1,6 +1,6 @@
 {
-  "name": "git-sync-cmd",
-  "version": "1.0.0",
+  "name": "sync-command",
+  "version": "1.0.1",
   "description": "同步git仓库",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "author": "uta.li",
   "license": "ISC",
   "bin": {
-    "git-sync-cli": "index.js"
+    "sync-command": "index.js"
   },
   "dependencies": {
     "chalk": "^4.1.2",
