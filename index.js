@@ -5,6 +5,8 @@ const fs = require("fs-extra");
 const { execSync } = require("child_process");
 const path = require("path");
 
+inquirer.registerPrompt('selectLine', require('inquirer-select-line'));
+
 let options = {};
 const localPath = process.cwd();
 
@@ -27,13 +29,40 @@ const questions = [
     default: "master",
   },
   {
+    type: "confirm",
+    message: "是否要在本地新建分支？",
+    name: "isCreateNew",
+    default: true
+  },
+  {
     type: "input",
-    message: "请输入需要合并到本地的哪个分支：",
-    name: "mergeBranch",
+    message: "请输入新建分支名称：",
+    name: "localNewBranch",
     validate: (val) => {
-      if (!val) return "合并分支不能为空";
+      if (!val) return "新建分支名称不能为空";
       return true;
     },
+    when: (answer) => {
+      return answer.isCreateNew
+    }
+  },
+  {
+    type: "confirm",
+    message: "是否需要合并同步内容至本地的其它分支？",
+    name: "isNeedMerge",
+    default: true
+  },
+  {
+    type: "input",
+    message: "请输入合并分支的名称（请确保分支已存在）：",
+    name: "mergeBranch",
+    validate: (val) => {
+      if (!val) return "合并分支名称不能为空";
+      return true;
+    },
+    when: (answer) => {
+      return answer.isNeedMerge
+    }
   },
 ];
 
@@ -44,25 +73,31 @@ inquirer.prompt(questions).then((answer) => {
 
 const sync = (answer) => {
   // 在当前文件夹下执行命令
-  // 当前路径新建并切换到“远程分支”
-  // const cmd1 = `git checkout -b ${answer.originBranch}`; // 涉及到升级 手动执行为好
+  // 本地新建分支并切换
+  if (answer.isCreateNew && answer.localNewBranch) {
+      const cmd1 = `git checkout -b ${answer.localNewBranch}`;
+      execSync(cmd1, (error) => {
+        if (error) {
+          return console.log(chalk.red(error));
+        }
+      });
+  }
   // 打开仓库路径 并切换到“远程分支” 拉取代码
-  const cmd2 = `cd ${answer.originPath} & git pull origin & git checkout ${answer.originBranch}`;
+  const cmd2 = `cd ${answer.originPath} && git pull origin && git checkout ${answer.originBranch}`;
   console.log(cmd2);
   execSync(cmd2, (error, stdout) => {
     if (error) {
-      return console.error(error);
+      return console.log(chalk.red(error));
     }
-    console.log(stdout);
   });
   // 复制仓库路径下所有文件
-  fs.copy(
+  fs.copySync(
     answer.originPath,
     localPath,
     {
       clobber: true,
       filter: (n) => {
-        var result = !/(\.git|node_modules)/.test(n);
+        var result = !/\.git(\/.*)?$|node_modules/g.test(n);
         console.log(result ? "copied" : "skipped", n);
         return result;
       },
@@ -76,9 +111,21 @@ const sync = (answer) => {
     }
   );
   // 提交本地代码
-  const cmd7 = `git add .& git commit -m "git sycn ${answer.originBranch}" & git push origin ${answer.originBranch}`;
-  // 切换到合并分支
-  const cmd8 = `git checkout ${answer.mergeBranch}`;
-  // 合并“远程分支”
-  const cmd9 = `git merge ${answer.originBranch}`;
+  const cmd7 = `git add . && git commit -m 'feat(同步): git-sync同步${answer.originBranch}分支'`;
+  console.log(cmd7);
+  execSync(cmd7, (error) => {
+    if (error) {
+      return console.log(chalk.red(error))
+    }
+  })
+  if (answer.isNeedMerge && answer.mergeBranch) {
+    // 切换到合并分支 需要新建分支还是已有分支？
+    const cmd8 = `git checkout ${answer.mergeBranch} && git merge ${answer.localNewBranch}`;
+    console.log(cmd8);
+    execSync(cmd8, (error) => {
+      if (error) {
+        return console.log(chalk.red(error));
+      }
+    });
+  }
 };
