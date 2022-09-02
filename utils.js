@@ -1,7 +1,7 @@
 const chalk = require('chalk');
 const fs = require('fs');
 
-let cacheJson, cachePath = './.cache.json';
+let cacheJson, cachePath = __dirname + '/.cache.json';
 const cache = {
   get: () => {
     try {

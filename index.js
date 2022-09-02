@@ -47,7 +47,7 @@ const questions = [
     type: "confirm",
     message: "是否要在本地新建分支？",
     name: "isCreateNew",
-    default: true,
+    default: false,
   },
   {
     type: "input",
@@ -57,15 +57,14 @@ const questions = [
       if (!val) return "新建分支名称不能为空";
       return true;
     },
-    when: (answer) => {
-      return answer.isCreateNew;
-    },
+    when: (answer) => answer.isCreateNew,
   },
   {
     type: "confirm",
     message: "是否需要合并同步内容至本地的其它分支？",
     name: "isNeedMerge",
-    default: true,
+    default: false,
+    when: (answer) => answer.isCreateNew,
   },
   {
     type: "autocomplete",
@@ -75,9 +74,7 @@ const questions = [
       if (!val) return "合并分支名称不能为空";
       return true;
     },
-    when: (answer) => {
-      return answer.isNeedMerge;
-    },
+    when: (answer) => answer.isNeedMerge,
     source: (answer, input) => {
       if (!input) return mergeBranch;
       const filters = mergeBranch.filter((item) => item.includes(input));
@@ -96,60 +93,50 @@ inquirer.prompt(questions).then((answer) => {
 });
 
 const sync = (answer) => {
-  // 在当前文件夹下执行命令
-  // 本地新建分支并切换
-  if (answer.isCreateNew && answer.localNewBranch) {
-    const cmd1 = `git checkout -b ${answer.localNewBranch}`;
-    execSync(cmd1, (error) => {
-      if (error) {
-        return console.log(chalk.red(error));
-      }
-    });
-  }
-  // 打开仓库路径 并切换到“远程分支” 拉取代码
-  const cmd2 = `cd ${answer.originPath} && git pull origin && git checkout ${answer.originBranch}`;
-  console.log(cmd2);
-  execSync(cmd2, (error, stdout) => {
-    if (error) {
-      return console.log(chalk.red(error));
+  try {
+    // 在当前文件夹下执行命令
+    // 本地新建分支并切换
+    if (answer.isCreateNew && answer.localNewBranch) {
+      const cmd1 = `git checkout -b ${answer.localNewBranch}`;
+      console.log(chalk.blue(cmd1))
+      execSync(cmd1);
     }
-  });
-  // 复制仓库路径下所有文件
-  fs.copySync(
-    answer.originPath,
-    localPath,
-    {
-      clobber: true,
-      filter: (n) => {
-        var result = !/\.git(\/.*)?$|node_modules/g.test(n);
-        console.log(result ? "copied" : "skipped", n);
-        return result;
+    // 打开仓库路径 并切换到“远程分支” 拉取代码
+    const cmd2 = `cd ${answer.originPath} && git pull origin && git checkout ${answer.originBranch}`;
+    console.log(chalk.blue(cmd2));
+    execSync(cmd2);
+    // 复制仓库路径下所有文件
+    fs.copySync(
+      answer.originPath,
+      localPath,
+      {
+        clobber: true,
+        filter: (n) => {
+          var result = !/\.git(\/.*)?$|node_modules/g.test(n);
+          console.log(result ? "copied" : "skipped", n);
+          return result;
+        },
+        overwrite: true,
       },
-      overwrite: true,
-    },
-    function (err) {
-      if (err) {
-        return console.error(err);
+      function (err) {
+        if (err) {
+          return console.log(chalk.red(err));
+        }
+        console.log(chalk.green("复制完成"));
       }
-      console.log("复制成功");
+    );
+    // 提交本地代码
+    const cmd7 = `git add . && git commit -m 'feat(同步): git-sync同步${answer.originBranch}分支'`;
+    console.log(chalk.blue(cmd7));
+    execSync(cmd7);
+    if (answer.isNeedMerge && answer.mergeBranch) {
+      // 切换到合并分支 需要新建分支还是已有分支？
+      const cmd8 = `git checkout ${answer.mergeBranch} && git merge ${answer.localNewBranch}`;
+      console.log(chalk.blue(cmd8));
+      execSync(cmd8);
     }
-  );
-  // 提交本地代码
-  const cmd7 = `git add . && git commit -m 'feat(同步): git-sync同步${answer.originBranch}分支'`;
-  console.log(cmd7);
-  execSync(cmd7, (error) => {
-    if (error) {
-      return console.log(chalk.red(error));
-    }
-  });
-  if (answer.isNeedMerge && answer.mergeBranch) {
-    // 切换到合并分支 需要新建分支还是已有分支？
-    const cmd8 = `git checkout ${answer.mergeBranch} && git merge ${answer.localNewBranch}`;
-    console.log(cmd8);
-    execSync(cmd8, (error) => {
-      if (error) {
-        return console.log(chalk.red(error));
-      }
-    });
+  } catch (error) {
+    console.log(chalk.red(error));
   }
+
 };
