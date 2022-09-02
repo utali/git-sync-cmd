@@ -3,8 +3,8 @@ const chalk = require("chalk");
 const inquirer = require("inquirer");
 const fs = require("fs-extra");
 const { execSync } = require("child_process");
-const { cache } = require("./utils");
 const inquirerPrompt = require('inquirer-autocomplete-prompt');
+const { cache } = require("./utils");
 
 const cacheJson = cache.get();
 const { originPath = [], originBranch = [], mergeBranch = [] } = cacheJson;
