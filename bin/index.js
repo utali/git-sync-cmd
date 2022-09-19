@@ -4,7 +4,6 @@ const inquirerPrompt = require('inquirer-autocomplete-prompt');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers')
 
-const { cache } = require("./utils");
 const merge = require('./merge');
 const copy = require('./copy');
 

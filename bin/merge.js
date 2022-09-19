@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 const chalk = require("chalk");
 const inquirer = require("inquirer");
-const { execSync, exec } = require("child_process");
-const inquirerPrompt = require('inquirer-autocomplete-prompt');
-
-inquirer.registerPrompt("autocomplete", inquirerPrompt);
+const { execSync } = require("child_process");
+const {createNewBranch} = require('./utils');
 
 const questions2 = [
   {
@@ -24,35 +22,12 @@ const questions2 = [
     when: (answer) => answer.isNeedMerge,
   },
   {
-    type: "autocomplete",
+    type: "input",
     message: "请输入合并后的分支名称（为空则默认为当前分支）：",
     name: "mergeBranch",
     when: (answer) => answer.isNeedMerge,
   },
 ];
-// 创建/切换分支
-const createNewBranch = (branch, lastBranch) => {
-  return new Promise((resolve, reject) => {
-    let cmd1 = '';
-    if (lastBranch) cmd1 += `git checkout ${lastBranch} && `;
-    cmd1 += `git checkout -b ${branch}`;
-    const cmd2 = `git checkout ${branch}`;
-    console.log(chalk.blue(cmd1));
-    exec(cmd1, (error) => {
-      if (error) {
-        if (error.code == 128) {
-          console.log(chalk.yellow(error));
-          console.log(chalk.blue(cmd2));
-          exec(cmd2, (err) => {
-            if (err) return reject(err);
-            return resolve();
-          })
-        }
-      }
-      resolve();
-    })
-  })
-}
 
 const sync2 = async (answer) => {
   if (answer.isNeedMerge && answer.oldBranch) {
@@ -66,12 +41,16 @@ const sync2 = async (answer) => {
 }
 
 const merge = () => {
-  inquirer.prompt(questions2).then((answer) => {
-    console.log('answer', answer);
-    sync2(answer);
-  }) .catch((error) => {
-    console.log('error', error)
-  });
+  return new Promise((resolve, reject) => {
+    inquirer.prompt(questions2).then((answer) => {
+      console.log('answer', answer);
+      sync2(answer);
+      resolve();
+    }) .catch((error) => {
+      console.log('error', error);
+      reject(error)
+    });
+  })
 }
 
 module.exports = merge;

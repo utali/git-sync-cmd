@@ -5,7 +5,7 @@ const fs = require("fs-extra");
 const { execSync, exec } = require("child_process");
 const inquirerPrompt = require('inquirer-autocomplete-prompt');
 
-const { cache } = require("./utils");
+const { cache, createNewBranch } = require("./utils");
 
 const cacheJson = cache.get();
 const { originPath = [], originBranch = [] } = cacheJson;
@@ -67,30 +67,6 @@ const questions1 = [
     when: (answer) => answer.isCreateNew,
   },
 ];
-
-// 创建/切换分支
-const createNewBranch = (branch, lastBranch) => {
-  return new Promise((resolve, reject) => {
-    let cmd1 = '';
-    if (lastBranch) cmd1 += `git checkout ${lastBranch} && `;
-    cmd1 += `git checkout -b ${branch}`;
-    const cmd2 = `git checkout ${branch}`;
-    console.log(chalk.blue(cmd1));
-    exec(cmd1, (error) => {
-      if (error) {
-        if (error.code == 128) {
-          console.log(chalk.yellow(error));
-          console.log(chalk.blue(cmd2));
-          exec(cmd2, (err) => {
-            if (err) return reject(err);
-            return resolve();
-          })
-        }
-      }
-      resolve();
-    })
-  })
-}
 
 // 提交本地代码
 const commit = (answer) => {
