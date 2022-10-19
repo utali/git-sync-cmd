@@ -1,6 +1,6 @@
 {
   "name": "git-sync-cmd",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "同步git仓库",
   "main": "bin/index.js",
   "scripts": {
