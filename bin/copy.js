@@ -103,7 +103,7 @@ const sync1 = (answer) => {
         {
           filter: (src, dest) => {
             var result = !(/\.git(\/.*)?$|node_modules/g.test(dest) || /\.git(\/.*)?$|node_modules/g.test(src));
-            console.log(result ? "copied" : "skipped", dest);
+            console.log(result ? "copied" : "skipped", src);
             return result;
           },
           overwrite: true,
